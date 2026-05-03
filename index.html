@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>하늘에서 쿠키가 내려와!</title>
+    
+    <!-- 폰트 불러오기 (기랑해랑) -->
+    <link href="https://fonts.googleapis.com/css2?family=Kirang+Haerang&display=swap" rel="stylesheet">
+    <style>
+        /* 나눔스퀘어라운드 웹폰트 정의 */
+        @font-face {
+            font-family: 'NanumSquareRound';
+            src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_two@1.0/NanumSquareRound.woff') format('woff');
+            font-weight: normal;
+            font-style: normal;
+        }
+
+        /* 1. 기본 폰트는 나눔스퀘어라운드로 설정 */
+        * {
+            font-family: 'NanumSquareRound', sans-serif;
+            letter-spacing: -0.5px;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* 2. 제목 및 강조 텍스트용 기랑해랑체 클래스 */
+        .title-font {
+            font-family: 'Kirang Haerang', cursive !important;
+        }
+
+        body {
+            background-color: #fff5f5;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            touch-action: none;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        .screen {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 50;
+        }
+
+        .active { display: flex; }
+
+        .pink-bg {
+            background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 99%);
+        }
+
+        #start-bg-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            background: #000;
+            overflow: hidden;
+        }
+
+        video, #canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* 태블릿 최적화 버튼 */
+        .config-btn {
+            background: white;
+            border: 4px solid #f87171;
+            padding: 12px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            font-weight: bold;
+        }
+
+        .config-btn.selected {
+            background: #f87171;
+            color: white;
+            transform: scale(1.05);
+            box-shadow: 0 10px 20px rgba(248, 113, 113, 0.3);
+        }
+
+        .team-tag {
+            position: absolute;
+            top: 20px;
+            padding: 8px 25px;
+            border-radius: 999px;
+            font-size: 2rem;
+            color: white;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            z-index: 30;
+            font-family: 'Kirang Haerang', cursive !important;
+        }
+
+        #divider {
+            position: absolute;
+            left: 50%;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            border-left: 4px dashed rgba(255, 255, 255, 0.6);
+            transform: translateX(-50%);
+            display: none;
+            z-index: 25;
+        }
+
+        /* 보너스 알림 애니메이션 개선 */
+        @keyframes bonus-pulse {
+            0%, 100% { transform: translateX(-50%) scale(1); box-shadow: 0 0 20px rgba(251, 191, 36, 0.4); }
+            50% { transform: translateX(-50%) scale(1.1); box-shadow: 0 0 40px rgba(251, 191, 36, 0.8); }
+        }
+
+        #bonus-alert {
+            position: absolute;
+            top: 140px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 253, 231, 0.95); /* 파스텔 크림 노랑 */
+            color: #b45309;
+            padding: 10px 40px;
+            border-radius: 25px;
+            font-size: 3.2rem;
+            display: none;
+            z-index: 100;
+            border: 5px solid #fcd34d;
+            font-family: 'Kirang Haerang', cursive !important;
+            animation: bonus-pulse 1s infinite ease-in-out;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.05);
+        }
+
+        /* 태블릿용 큰 슬라이더 */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 25px;
+            background: #fee2e2;
+            border-radius: 15px;
+            outline: none;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 45px;
+            height: 45px;
+            background: #f87171;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 5px solid white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+    </style>
+    
+    <!-- 외부 라이브러리 -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+</head>
+<body>
+
+    <!-- 1. 시작 화면 -->
+    <div id="start-screen" class="screen active pink-bg">
+        <canvas id="start-bg-canvas"></canvas>
+        <div class="relative z-20 flex flex-col items-center w-full px-10">
+            <h1 class="text-7xl md:text-8xl text-white mb-6 drop-shadow-2xl text-center title-font">하늘에서<br>쿠키가 내려와!</h1>
+            <p id="cam-status" class="text-xl md:text-2xl text-white mb-10 bg-black/20 px-8 py-3 rounded-full font-bold text-center">얼굴을 움직여서 떨어지는 간식을 냠냠 먹어보아요!</p>
+            <button id="start-btn" onclick="goToSettings()" disabled class="mt-8 opacity-50 bg-rose-500 text-white px-20 py-5 rounded-full text-3xl md:text-4xl shadow-xl hover:scale-105 transition-all font-bold border-4 border-rose-100">
+                준비하기
+            </button>
+        </div>
+    </div>
+
+    <!-- 2. 설정 화면 -->
+    <div id="settings-screen" class="screen bg-white overflow-y-auto py-10">
+        <h2 class="text-6xl text-rose-500 mb-10 title-font">놀이 규칙을 정해요</h2>
+        
+        <div class="space-y-8 w-full max-w-4xl px-10">
+            <div>
+                <p class="text-2xl md:text-3xl mb-4 text-gray-700 font-bold title-font">👩‍👧‍👦 누구와 놀이할까요?</p>
+                <div class="grid grid-cols-2 gap-4">
+                    <button class="config-btn mode-btn selected" onclick="setMode('together', this)">
+                        <span class="text-5xl">🤝</span>
+                        <span class="text-lg md:text-xl">함께 모드</span>
+                    </button>
+                    <button class="config-btn mode-btn" onclick="setMode('battle', this)">
+                        <span class="text-5xl">⚔️</span>
+                        <span class="text-lg md:text-xl">대결 모드</span>
+                    </button>
+                </div>
+            </div>
+
+            <div>
+                <p class="text-2xl md:text-3xl mb-4 text-gray-700 font-bold title-font">🎨 어떤 쿠키를 먹을까요?</p>
+                <div class="grid grid-cols-3 gap-4">
+                    <button class="config-btn content-btn selected" onclick="setContent('snack', this)">
+                        <span class="text-4xl">🍭</span>
+                        <span class="text-base md:text-lg">다양한 간식</span>
+                    </button>
+                    <button class="config-btn content-btn" onclick="setContent('number', this)">
+                        <span class="text-4xl">7️⃣</span>
+                        <span class="text-base md:text-lg">숫자 쿠키</span>
+                    </button>
+                    <button class="config-btn content-btn" onclick="setContent('korean', this)">
+                        <span class="text-4xl">ㄱ</span>
+                        <span class="text-base md:text-lg">한글 쿠키</span>
+                    </button>
+                </div>
+            </div>
+
+            <div>
+                <p class="text-2xl md:text-3xl mb-4 text-gray-700 font-bold title-font">⏰ 얼마나 놀이할까요? <span id="time-val" class="text-rose-500 ml-4">45초</span></p>
+                <input type="range" min="20" max="120" value="45" step="5" oninput="setTime(this.value, this)">
+                <div class="flex justify-between mt-2 text-gray-400 font-bold text-lg">
+                    <span>20초</span>
+                    <span>120초</span>
+                </div>
+            </div>
+        </div>
+
+        <button onclick="goToReady()" class="mt-10 bg-rose-500 text-white px-16 py-5 rounded-full text-3xl shadow-xl hover:scale-105 transition-all font-bold border-4 border-rose-100">
+            설정 완료!
+        </button>
+    </div>
+
+    <!-- 3. 게임 화면 -->
+    <div id="game-container" style="display:none;">
+        <video id="video" playsinline></video>
+        <canvas id="canvas"></canvas>
+        <div id="divider"></div>
+        
+        <div id="ready-overlay" class="absolute inset-0 bg-black/50 flex flex-col items-center justify-center z-[60]">
+            <div class="bg-white p-10 md:p-14 rounded-[50px] text-center shadow-2xl border-8 border-rose-300 w-[80%] max-w-2xl">
+                <p class="text-5xl md:text-6xl text-rose-500 mb-6 title-font">준비 운동을 해요!</p>
+                <p class="text-2xl md:text-3xl text-gray-600 mb-10 font-bold leading-relaxed">내 얼굴이 보이나요?<br>얼굴을 움직여서 간식을 잡아요!</p>
+                <button onclick="startGame()" class="bg-rose-500 text-white px-14 py-6 rounded-full text-4xl shadow-lg animate-bounce font-bold">
+                    준비 됐어요!
+                </button>
+            </div>
+        </div>
+
+        <div id="team-a-label" class="team-tag" style="left: 20px; display: none;">❤️ 빨강팀</div>
+        <div id="team-b-label" class="team-tag bg-blue-500" style="right: 20px; display: none;">💙 파랑팀</div>
+        
+        <div id="score-a-display" class="absolute top-28 left-12 text-white text-7xl md:text-8xl drop-shadow-lg title-font" style="display: none;">0</div>
+        <div id="score-b-display" class="absolute top-28 right-12 text-white text-7xl md:text-8xl drop-shadow-lg title-font" style="display: none;">0</div>
+        
+        <div id="timer" class="absolute top-6 left-1/2 -translate-x-1/2 bg-white px-10 py-3 rounded-full text-4xl md:text-5xl text-rose-600 shadow-xl border-4 border-rose-100 title-font">
+            45
+        </div>
+
+        <div id="bonus-alert">🌟 보너스 2배 🌟</div>
+    </div>
+
+    <!-- 4. 결과 화면 -->
+    <div id="result-screen" class="screen pink-bg py-10">
+        <h2 class="text-7xl md:text-8xl text-white mb-8 drop-shadow-lg title-font">와! 다 먹었다!</h2>
+        
+        <div class="flex justify-center gap-6 w-full max-w-5xl mb-8 px-6">
+            <div id="result-card-a" class="flex-1 text-center p-8 md:p-10 rounded-[40px] bg-white border-8 border-red-300 shadow-2xl">
+                <div id="label-a-final" class="text-3xl md:text-4xl mb-4 text-red-600 font-bold title-font">❤️ 빨강팀</div>
+                <div class="text-7xl md:text-9xl font-bold text-red-500 title-font"><span id="slot-a" class="slot-number">0</span>점</div>
+            </div>
+            <div id="result-card-b" class="flex-1 text-center p-8 md:p-10 rounded-[40px] bg-white border-8 border-blue-300 shadow-2xl" style="display: none;">
+                <div class="text-3xl md:text-4xl mb-4 text-blue-600 font-bold title-font">💙 파랑팀</div>
+                <div class="text-7xl md:text-9xl font-bold text-blue-500 title-font"><span id="slot-b" class="slot-number">0</span>점</div>
+            </div>
+        </div>
+
+        <div class="bg-white/90 p-8 rounded-[40px] max-w-4xl shadow-xl mb-10 flex flex-col items-center mx-6">
+            <p id="praise-msg" class="text-xl md:text-2xl text-gray-800 leading-relaxed text-center font-bold"></p>
+            <div id="final-cheer" class="text-4xl md:text-5xl text-rose-600 mt-6 font-bold animate-bounce text-center title-font"></div>
+            <div id="total-score-box" class="mt-6 text-4xl md:text-5xl font-bold text-center p-5 rounded-3xl bg-yellow-100 text-yellow-700 border-4 border-yellow-200 title-font" style="display:none;">
+                우리의 합계: <span id="total-val">0</span>점
+            </div>
+        </div>
+
+        <button onclick="location.reload()" class="bg-white text-rose-500 px-14 py-6 rounded-full text-3xl shadow-xl font-bold hover:scale-105 transition-all">
+            처음으로 돌아가기
+        </button>
+    </div>
+
+    <script>
+        let config = { mode: 'together', content: 'snack', time: 45 };
+        const contents = {
+            snack: ['🍪', '🍩', '🍰', '🥨', '🍭', '🥐', '🧁', '🍦', '🍡', '🍮'],
+            number: ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'],
+            korean: ['가', '나', '다', '라', '마', '바', '사', '아', '자', '차', '카', '타','파','하']
+        };
+        const colors = ['#FFADAD', '#FFD6A5', '#FDFFB6', '#CAFFBF', '#9BF6FF', '#A0C4FF', '#BDB2FF', '#FFC6FF'];
+        const shapes = ['circle', 'rect', 'roundedRect'];
+        
+        const mouthColors = ['#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'];
+
+        let scoreA = 0, scoreB = 0, timeLeft = 45;
+        let gameActive = false, isBonus = false;
+        let cookies = [];
+        let facePositions = []; // 얼굴 전체 위치 저장
+
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const startCanvas = document.getElementById('start-bg-canvas');
+        const startCtx = startCanvas.getContext('2d');
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        let bgmInterval;
+        let bgmTick = 0;
+        const melody = [261.63, 329.63, 392.00, 523.25, 440.00, 349.23, 293.66, 392.00, 261.63, 392.00, 523.25, 493.88, 440.00, 392.00, 349.23, 329.63];
+        const chords = [[130.81, 164.81, 196.00], [174.61, 220.00, 261.63], [196.00, 246.94, 293.66], [130.81, 164.81, 196.00]];
+
+        function startBGM() {
+            if (bgmInterval) return;
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            bgmTick = 0;
+            bgmInterval = setInterval(() => {
+                const note = melody[bgmTick % melody.length];
+                playTone(note, 'triangle', 0.2, 0.06);
+                if (bgmTick % 4 === 0) {
+                    const currentChord = chords[(bgmTick / 4) % chords.length];
+                    currentChord.forEach(f => playTone(f, 'sine', 0.8, 0.03));
+                }
+                bgmTick++;
+            }, 250);
+        }
+
+        function stopBGM() {
+            clearInterval(bgmInterval);
+            bgmInterval = null;
+        }
+
+        function playTone(freq, type, duration, volume = 0.1) {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            gain.gain.setValueAtTime(volume, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + duration);
+        }
+
+        function playSound(freq, type = 'sine', duration = 0.1) {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            playTone(freq, type, duration);
+        }
+
+        let startCookies = [];
+
+        function resizeCanvases() {
+            canvas.width = startCanvas.width = window.innerWidth;
+            canvas.height = startCanvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvases);
+        resizeCanvases();
+
+        function drawStartScreenAnimation() {
+            if (document.getElementById('start-screen').classList.contains('active')) {
+                startCtx.clearRect(0, 0, startCanvas.width, startCanvas.height);
+                if (Math.random() < 0.05) {
+                    startCookies.push({
+                        x: Math.random() * startCanvas.width,
+                        y: -100,
+                        char: contents.snack[Math.floor(Math.random() * contents.snack.length)],
+                        speed: 2 + Math.random() * 3,
+                        angle: Math.random() * Math.PI * 2,
+                        rot: (Math.random() - 0.5) * 0.05
+                    });
+                }
+                for (let i = startCookies.length - 1; i >= 0; i--) {
+                    let sc = startCookies[i];
+                    sc.y += sc.speed; sc.angle += sc.rot;
+                    startCtx.save();
+                    startCtx.translate(sc.x, sc.y);
+                    startCtx.rotate(sc.angle);
+                    startCtx.font = "60px Kirang Haerang";
+                    startCtx.textAlign = "center";
+                    startCtx.fillText(sc.char, 0, 0);
+                    startCtx.restore();
+                    if (sc.y > startCanvas.height + 100) startCookies.splice(i, 1);
+                }
+                requestAnimationFrame(drawStartScreenAnimation);
+            }
+        }
+        drawStartScreenAnimation();
+
+        window.onload = async () => {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                video.srcObject = stream;
+                document.getElementById('start-btn').disabled = false;
+                document.getElementById('start-btn').classList.remove('opacity-50');
+            } catch (err) {
+                document.getElementById('cam-status').innerText = "카메라 권한을 허용해주세요!";
+            }
+        };
+
+        function setMode(m, el) {
+            config.mode = m;
+            document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('selected'));
+            el.classList.add('selected');
+        }
+        function setContent(c, el) {
+            config.content = c;
+            document.querySelectorAll('.content-btn').forEach(b => b.classList.remove('selected'));
+            el.classList.add('selected');
+        }
+        function setTime(val, el) {
+            config.time = parseInt(val);
+            document.getElementById('time-val').innerText = val + "초";
+        }
+
+        function goToSettings() {
+            document.getElementById('start-screen').classList.remove('active');
+            document.getElementById('settings-screen').classList.add('active');
+        }
+
+        function goToReady() {
+            document.getElementById('settings-screen').classList.remove('active');
+            document.getElementById('game-container').style.display = 'block';
+            const teamA = document.getElementById('team-a-label');
+            if (config.mode === 'battle') {
+                document.getElementById('divider').style.display = 'block';
+                teamA.classList.add('bg-red-500'); teamA.innerText = "❤️ 빨강팀";
+            } else {
+                document.getElementById('divider').style.display = 'none';
+                teamA.classList.remove('bg-red-500'); teamA.style.backgroundColor = '#4ade80'; teamA.innerText = "🤝 함께해요";
+            }
+            resizeCanvases();
+            initFaceMesh();
+        }
+
+        function startGame() {
+            startBGM();
+            document.getElementById('ready-overlay').style.display = 'none';
+            gameActive = true; timeLeft = config.time;
+            document.getElementById('team-a-label').style.display = 'block';
+            document.getElementById('score-a-display').style.display = 'block';
+            if (config.mode === 'battle') {
+                document.getElementById('team-b-label').style.display = 'block';
+                document.getElementById('score-b-display').style.display = 'block';
+            }
+            const timerInt = setInterval(() => {
+                if (!gameActive) { clearInterval(timerInt); return; }
+                timeLeft--; document.getElementById('timer').innerText = timeLeft;
+                if (timeLeft === 10) {
+                    isBonus = true; document.getElementById('bonus-alert').style.display = 'block';
+                    setTimeout(() => { if (document.getElementById('bonus-alert')) document.getElementById('bonus-alert').style.display = 'none'; }, 3000);
+                }
+                if (timeLeft <= 0) { gameActive = false; endGame(); }
+            }, 1000);
+        }
+
+        function initFaceMesh() {
+            const faceMesh = new FaceMesh({
+                locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`
+            });
+            faceMesh.setOptions({
+                maxNumFaces: 4, refineLandmarks: true, minDetectionConfidence: 0.5, minTrackingConfidence: 0.5
+            });
+            faceMesh.onResults(onResults);
+            const camera = new Camera(video, {
+                onFrame: async () => { await faceMesh.send({ image: video }); },
+                width: 1280, height: 720
+            });
+            camera.start();
+        }
+
+        function onResults(results) {
+            ctx.save();
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            // 정방향 유지
+            ctx.drawImage(results.image, 0, 0, canvas.width, canvas.height);
+            ctx.restore();
+
+            facePositions = [];
+            if (results.multiFaceLandmarks) {
+                results.multiFaceLandmarks.forEach((landmarks, index) => {
+                    // 얼굴의 전체적인 위치와 크기를 파악하기 위해 랜드마크의 경계를 계산
+                    let minX = 1, maxX = 0, minY = 1, maxY = 0;
+                    landmarks.forEach(p => {
+                        if (p.x < minX) minX = p.x; if (p.x > maxX) maxX = p.x;
+                        if (p.y < minY) minY = p.y; if (p.y > maxY) maxY = p.y;
+                    });
+
+                    // 얼굴 중심점 및 반지름 계산 (얼굴 전체 인식용)
+                    const centerX = ((minX + maxX) / 2) * canvas.width;
+                    const centerY = ((minY + maxY) / 2) * canvas.height;
+                    const faceWidth = (maxX - minX) * canvas.width;
+                    const faceHeight = (maxY - minY) * canvas.height;
+                    
+                    // 아이들의 얼굴이 작으므로 센서 반지름을 넉넉하게 설정 (얼굴 너비의 약 0.7배)
+                    const radius = Math.max(faceWidth, faceHeight) * 0.7;
+
+                    let team = (centerX < canvas.width / 2) ? 0 : 1;
+                    if (config.mode === 'together') team = 0;
+
+                    let displayColor = (config.mode === 'battle') ? (team === 0 ? '#ef4444' : '#3b82f6') : mouthColors[index % mouthColors.length];
+
+                    facePositions.push({ x: centerX, y: centerY, radius: radius, team });
+                    drawFaceSensor(centerX, centerY, radius, displayColor);
+                });
+            }
+            if (gameActive) updateObjects();
+        }
+
+        function drawFaceSensor(x, y, radius, color) {
+            ctx.beginPath();
+            ctx.arc(x, y, radius, 0, Math.PI * 2);
+            ctx.lineWidth = 8;
+            ctx.strokeStyle = "white";
+            ctx.stroke();
+            ctx.fillStyle = color + "66"; // 반투명 배경
+            ctx.fill();
+            
+            // 귀여운 '냠냠' 표시
+            ctx.fillStyle = "white";
+            ctx.font = "bold 40px Kirang Haerang";
+            ctx.textAlign = "center";
+            ctx.fillText("냠냠!", x, y - radius - 15);
+        }
+
+        function updateObjects() {
+            if (Math.random() < (isBonus ? 0.2 : 0.1)) {
+                cookies.push({
+                    x: Math.random() * (canvas.width - 150) + 75,
+                    y: -100,
+                    char: isBonus && Math.random() > 0.7 ? '🌟' : contents[config.content][Math.floor(Math.random() * contents[config.content].length)],
+                    speed: 5 + Math.random() * 5,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    shape: shapes[Math.floor(Math.random() * shapes.length)]
+                });
+            }
+            for (let i = cookies.length - 1; i >= 0; i--) {
+                let c = cookies[i];
+                c.y += c.speed;
+                ctx.fillStyle = c.color; ctx.strokeStyle = "white"; ctx.lineWidth = 4;
+                const size = 110;
+                if (c.char === '🌟') {
+                    ctx.font = "100px Kirang Haerang"; ctx.fillText(c.char, c.x, c.y + 35);
+                } else {
+                    ctx.beginPath();
+                    if (c.shape === 'circle') ctx.arc(c.x, c.y, size/2, 0, Math.PI * 2);
+                    else if (c.shape === 'rect') ctx.rect(c.x - size/2, c.y - size/2, size, size);
+                    else ctx.roundRect(c.x - size/2, c.y - size/2, size, size, 20);
+                    ctx.fill(); ctx.stroke();
+                    ctx.fillStyle = "#333"; ctx.font = "64px Kirang Haerang"; ctx.textAlign = "center"; ctx.fillText(c.char, c.x, c.y + 20);
+                }
+
+                facePositions.forEach((f) => {
+                    // 이제 입 모양이 아니라 얼굴 중심과의 거리를 체크합니다.
+                    if (Math.hypot(f.x - c.x, f.y - c.y) < f.radius + 30) {
+                        const p = c.char === '🌟' ? 10 : 1;
+                        if (f.team === 0) { scoreA += p; document.getElementById('score-a-display').innerText = scoreA; }
+                        else { scoreB += p; document.getElementById('score-b-display').innerText = scoreB; }
+                        playSound(f.team === 0 ? 523.25 : 659.25, 'sine', 0.1);
+                        cookies.splice(i, 1);
+                    }
+                });
+                if (c.y > canvas.height + 150) cookies.splice(i, 1);
+            }
+        }
+
+        function runSlot(targetId, finalValue) {
+            const el = document.getElementById(targetId);
+            if (!el) return;
+            let start = performance.now();
+            function update(now) {
+                let progress = Math.min((now - start) / 2500, 1);
+                el.innerText = Math.floor(progress * finalValue);
+                if (progress < 1) requestAnimationFrame(update);
+                else el.innerText = finalValue;
+            }
+            requestAnimationFrame(update);
+        }
+
+        function endGame() {
+            stopBGM(); document.getElementById('game-container').style.display = 'none';
+            document.getElementById('result-screen').classList.add('active');
+            const praiseEl = document.getElementById('praise-msg');
+            const cheerEl = document.getElementById('final-cheer');
+            const totalScoreBox = document.getElementById('total-score-box');
+
+            if (config.mode === 'battle') {
+                document.getElementById('result-card-b').style.display = 'block';
+                document.getElementById('label-a-final').innerText = "❤️ 빨강팀";
+                runSlot('slot-a', scoreA); runSlot('slot-b', scoreB);
+                if (praiseEl) praiseEl.innerText = `서로 정정당당하게 놀이하는 모습이 정말 멋져요! 끝까지 포기하지 않고 집중해서 간식을 모은 우리 친구들, 최고예요!`;
+                if (cheerEl) cheerEl.innerText = "함께 놀아준 친구에게 '고마워!'라고 인사해요!";
+                if (totalScoreBox) { totalScoreBox.style.display = 'block'; document.getElementById('total-val').innerText = scoreA + scoreB; }
+            } else {
+                document.getElementById('label-a-final').innerText = "🤝 함께해요";
+                document.getElementById('label-a-final').style.color = '#16a34a';
+                runSlot('slot-a', scoreA);
+                if (praiseEl) praiseEl.innerText = `우와! 우리 친구들이 힘을 합쳐서 하늘에서 내려오는 간식을 이렇게나 많이 모았네요! 적극적으로 참여하는 모습이 대견해요!`;
+                if (cheerEl) cheerEl.innerText = "'열심히 참여한 나! 정말 최고야✨'라고 외쳐봐요!";
+            }
+            confetti({ particleCount: 300, spread: 100, origin: { y: 0.5 } });
+            playTone(523.25, 'square', 0.2, 0.1);
+            setTimeout(() => playTone(659.25, 'square', 0.2, 0.1), 150);
+            setTimeout(() => playTone(783.99, 'square', 0.5, 0.1), 300);
+        }
+    </script>
+</body>
+</html>
