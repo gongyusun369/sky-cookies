@@ -5,10 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>하늘에서 쿠키가 내려와!</title>
     
-    <!-- 폰트 불러오기 (기랑해랑) -->
     <link href="https://fonts.googleapis.com/css2?family=Kirang+Haerang&display=swap" rel="stylesheet">
     <style>
-        /* 나눔스퀘어라운드 웹폰트 정의 */
         @font-face {
             font-family: 'NanumSquareRound';
             src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_two@1.0/NanumSquareRound.woff') format('woff');
@@ -16,164 +14,578 @@
             font-style: normal;
         }
 
-        /* 1. 기본 폰트는 나눔스퀘어라운드로 설정 */
+        :root {
+            --rose: #f87171;
+            --rose-deep: #ef4444;
+            --rose-light: #fecaca;
+            --cream: #fff5f5;
+        }
+
         * {
             font-family: 'NanumSquareRound', sans-serif;
             letter-spacing: -0.5px;
             -webkit-tap-highlight-color: transparent;
+            box-sizing: border-box;
         }
 
-        /* 2. 제목 및 강조 텍스트용 기랑해랑체 클래스 */
         .title-font {
             font-family: 'Kirang Haerang', cursive !important;
         }
 
-        body {
-            background-color: #fff5f5;
+        html, body {
             margin: 0;
             padding: 0;
             overflow: hidden;
             touch-action: none;
-            width: 100vw;
-            height: 100vh;
-        }
-
-        .screen {
-            display: none;
-            position: absolute;
-            top: 0;
-            left: 0;
             width: 100%;
             height: 100%;
+            height: 100dvh; /* dynamic viewport height - 모바일 주소창 대응 */
+        }
+
+        body {
+            background-color: var(--cream);
+        }
+
+        /* =========================================
+           공통 화면 구조
+        ========================================= */
+        .screen {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            height: 100dvh;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             z-index: 50;
+            overflow-y: auto;
+            overflow-x: hidden;
+            -webkit-overflow-scrolling: touch;
         }
-
         .active { display: flex; }
 
         .pink-bg {
-            background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 99%);
+            background: linear-gradient(160deg, #ff9a9e 0%, #fad0c4 100%);
+        }
+
+        /* =========================================
+           1. 시작 화면
+        ========================================= */
+        #start-screen {
+            padding: env(safe-area-inset-top, 16px) 20px env(safe-area-inset-bottom, 16px);
+            justify-content: space-between;
         }
 
         #start-bg-canvas {
-            position: absolute;
-            top: 0;
-            left: 0;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
             z-index: 10;
             pointer-events: none;
         }
 
-        #game-container {
+        .start-content {
             position: relative;
-            width: 100vw;
-            height: 100vh;
-            background: #000;
-            overflow: hidden;
-        }
-
-        video, #canvas {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        /* 태블릿 최적화 버튼 */
-        .config-btn {
-            background: white;
-            border: 4px solid #f87171;
-            padding: 12px 20px;
-            border-radius: 20px;
-            cursor: pointer;
-            transition: all 0.2s;
+            z-index: 20;
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 8px;
+            width: 100%;
+            padding: 0 16px;
+            gap: clamp(12px, 3vw, 24px);
+            justify-content: center;
+            flex: 1;
+        }
+
+        .start-title {
+            font-family: 'Kirang Haerang', cursive;
+            color: white;
+            text-align: center;
+            line-height: 1.2;
+            drop-shadow: 0 4px 16px rgba(0,0,0,0.2);
+            /* 화면 크기에 따라 유동적으로 */
+            font-size: clamp(2.4rem, 10vw, 5rem);
+            margin: 0;
+        }
+
+        .start-cookie-icon {
+            font-size: clamp(3rem, 12vw, 6rem);
+            animation: float 2s ease-in-out infinite;
+            line-height: 1;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        #cam-status {
+            font-size: clamp(0.85rem, 3.5vw, 1.1rem);
+            color: white;
+            background: rgba(0,0,0,0.2);
+            padding: 10px 20px;
+            border-radius: 999px;
+            font-weight: bold;
+            text-align: center;
+            margin: 0;
+            max-width: 90%;
+        }
+
+        #start-btn {
+            background: white;
+            color: var(--rose-deep);
+            border: 4px solid rgba(255,255,255,0.6);
+            padding: clamp(14px, 3vw, 20px) clamp(40px, 10vw, 80px);
+            border-radius: 999px;
+            font-size: clamp(1.3rem, 5vw, 2rem);
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+            font-family: 'Kirang Haerang', cursive;
+            width: 80%;
+            max-width: 320px;
+        }
+        #start-btn:not(:disabled):active {
+            transform: scale(0.96);
+        }
+        #start-btn:disabled { opacity: 0.5; }
+
+        /* =========================================
+           2. 설정 화면
+        ========================================= */
+        #settings-screen {
+            background: white;
+            padding: env(safe-area-inset-top, 0px) 0 env(safe-area-inset-bottom, 16px);
+            justify-content: flex-start;
+            align-items: stretch;
+        }
+
+        .settings-inner {
+            width: 100%;
+            max-width: 520px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: clamp(16px, 4vw, 32px) clamp(16px, 5vw, 32px);
+            gap: clamp(14px, 3vw, 24px);
+        }
+
+        .settings-title {
+            font-family: 'Kirang Haerang', cursive;
+            color: var(--rose);
+            font-size: clamp(1.8rem, 7vw, 3rem);
+            margin: 0;
+            text-align: center;
+        }
+
+        .setting-section {
+            width: 100%;
+        }
+
+        .setting-label {
+            font-size: clamp(0.95rem, 3.5vw, 1.25rem);
+            font-weight: bold;
+            color: #444;
+            margin-bottom: 10px;
+            font-family: 'Kirang Haerang', cursive;
+        }
+
+        .btn-grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        .btn-grid-3 {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+        }
+
+        .config-btn {
+            background: white;
+            border: 3px solid var(--rose-light);
+            padding: clamp(10px, 2.5vw, 16px) 8px;
+            border-radius: 16px;
+            cursor: pointer;
+            transition: all 0.15s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
             font-weight: bold;
         }
-
+        .config-btn .emoji {
+            font-size: clamp(1.8rem, 7vw, 3rem);
+            line-height: 1;
+        }
+        .config-btn .label {
+            font-size: clamp(0.75rem, 2.8vw, 1rem);
+            color: #555;
+        }
         .config-btn.selected {
-            background: #f87171;
+            background: var(--rose);
+            border-color: var(--rose-deep);
             color: white;
-            transform: scale(1.05);
-            box-shadow: 0 10px 20px rgba(248, 113, 113, 0.3);
+            transform: scale(1.03);
+            box-shadow: 0 6px 16px rgba(248, 113, 113, 0.35);
+        }
+        .config-btn.selected .label { color: white; }
+
+        /* 슬라이더 */
+        .time-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 8px;
+        }
+        .time-row .setting-label { margin-bottom: 0; }
+        #time-val {
+            color: var(--rose);
+            font-family: 'Kirang Haerang', cursive;
+            font-size: clamp(1rem, 4vw, 1.4rem);
+            white-space: nowrap;
         }
 
-        .team-tag {
-            position: absolute;
-            top: 20px;
-            padding: 8px 25px;
-            border-radius: 999px;
-            font-size: 2rem;
-            color: white;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-            z-index: 30;
-            font-family: 'Kirang Haerang', cursive !important;
-        }
-
-        #divider {
-            position: absolute;
-            left: 50%;
-            top: 0;
-            bottom: 0;
-            width: 4px;
-            border-left: 4px dashed rgba(255, 255, 255, 0.6);
-            transform: translateX(-50%);
-            display: none;
-            z-index: 25;
-        }
-
-        /* 보너스 알림 애니메이션 개선 */
-        @keyframes bonus-pulse {
-            0%, 100% { transform: translateX(-50%) scale(1); box-shadow: 0 0 20px rgba(251, 191, 36, 0.4); }
-            50% { transform: translateX(-50%) scale(1.1); box-shadow: 0 0 40px rgba(251, 191, 36, 0.8); }
-        }
-
-        #bonus-alert {
-            position: absolute;
-            top: 140px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(255, 253, 231, 0.95); /* 파스텔 크림 노랑 */
-            color: #b45309;
-            padding: 10px 40px;
-            border-radius: 25px;
-            font-size: 3.2rem;
-            display: none;
-            z-index: 100;
-            border: 5px solid #fcd34d;
-            font-family: 'Kirang Haerang', cursive !important;
-            animation: bonus-pulse 1s infinite ease-in-out;
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.05);
-        }
-
-        /* 태블릿용 큰 슬라이더 */
         input[type=range] {
             -webkit-appearance: none;
             width: 100%;
-            height: 25px;
+            height: 20px;
             background: #fee2e2;
             border-radius: 15px;
             outline: none;
         }
         input[type=range]::-webkit-slider-thumb {
             -webkit-appearance: none;
-            width: 45px;
-            height: 45px;
-            background: #f87171;
+            width: clamp(32px, 7vw, 44px);
+            height: clamp(32px, 7vw, 44px);
+            background: var(--rose);
             border-radius: 50%;
             cursor: pointer;
-            border: 5px solid white;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            border: 4px solid white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
         }
+        .range-labels {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 4px;
+            font-size: clamp(0.75rem, 2.8vw, 0.9rem);
+            color: #aaa;
+            font-weight: bold;
+        }
+
+        .confirm-btn {
+            background: var(--rose);
+            color: white;
+            border: none;
+            padding: clamp(14px, 3vw, 18px) 0;
+            border-radius: 999px;
+            font-size: clamp(1.2rem, 5vw, 1.8rem);
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            max-width: 320px;
+            transition: all 0.15s;
+            box-shadow: 0 6px 20px rgba(248, 113, 113, 0.35);
+            font-family: 'Kirang Haerang', cursive;
+            margin-top: 4px;
+        }
+        .confirm-btn:active { transform: scale(0.97); }
+
+        /* =========================================
+           3. 게임 컨테이너
+        ========================================= */
+        #game-container {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            height: 100dvh;
+            background: #000;
+            overflow: hidden;
+        }
+
+        video, #canvas {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            object-fit: cover;
+        }
+
+        /* 준비 오버레이 */
+        #ready-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(0,0,0,0.55);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 60;
+            padding: 20px;
+        }
+
+        .ready-card {
+            background: white;
+            padding: clamp(24px, 5vw, 48px) clamp(20px, 5vw, 40px);
+            border-radius: 40px;
+            text-align: center;
+            border: 6px solid #fca5a5;
+            box-shadow: 0 24px 60px rgba(0,0,0,0.3);
+            width: 100%;
+            max-width: 360px;
+        }
+
+        .ready-card h2 {
+            font-family: 'Kirang Haerang', cursive;
+            color: var(--rose);
+            font-size: clamp(1.6rem, 6vw, 2.5rem);
+            margin: 0 0 12px;
+        }
+
+        .ready-card p {
+            color: #555;
+            font-size: clamp(0.9rem, 3.5vw, 1.2rem);
+            font-weight: bold;
+            line-height: 1.7;
+            margin: 0 0 20px;
+        }
+
+        .ready-start-btn {
+            background: var(--rose);
+            color: white;
+            border: none;
+            padding: clamp(12px, 3vw, 16px) clamp(28px, 6vw, 48px);
+            border-radius: 999px;
+            font-size: clamp(1.2rem, 5vw, 1.8rem);
+            font-weight: bold;
+            font-family: 'Kirang Haerang', cursive;
+            cursor: pointer;
+            animation: bounce 1s infinite;
+            box-shadow: 0 6px 20px rgba(248, 113, 113, 0.4);
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-6px); }
+        }
+
+        /* 팀 라벨 */
+        .team-tag {
+            position: absolute;
+            top: max(env(safe-area-inset-top), 12px);
+            padding: 6px 18px;
+            border-radius: 999px;
+            font-size: clamp(1rem, 4vw, 1.6rem);
+            color: white;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            z-index: 30;
+            font-family: 'Kirang Haerang', cursive;
+        }
+
+        /* 점수 표시 */
+        .score-display {
+            position: absolute;
+            color: white;
+            font-family: 'Kirang Haerang', cursive;
+            font-size: clamp(2.4rem, 10vw, 5rem);
+            text-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 0 0 4px rgba(0,0,0,0.1);
+            z-index: 30;
+            display: none;
+        }
+
+        #score-a-display {
+            top: clamp(52px, 12vw, 90px);
+            left: clamp(12px, 4vw, 40px);
+        }
+
+        #score-b-display {
+            top: clamp(52px, 12vw, 90px);
+            right: clamp(12px, 4vw, 40px);
+        }
+
+        /* 타이머 */
+        #timer {
+            position: absolute;
+            top: max(env(safe-area-inset-top), 10px);
+            left: 50%;
+            transform: translateX(-50%);
+            background: white;
+            padding: clamp(6px, 1.5vw, 10px) clamp(20px, 5vw, 40px);
+            border-radius: 999px;
+            font-size: clamp(1.4rem, 6vw, 2.5rem);
+            color: #dc2626;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+            border: 3px solid #fecaca;
+            font-family: 'Kirang Haerang', cursive;
+            z-index: 35;
+            white-space: nowrap;
+        }
+
+        /* 구분선 */
+        #divider {
+            position: absolute;
+            left: 50%;
+            top: 0; bottom: 0;
+            width: 4px;
+            border-left: 4px dashed rgba(255,255,255,0.55);
+            transform: translateX(-50%);
+            display: none;
+            z-index: 25;
+        }
+
+        /* 보너스 알림 */
+        @keyframes bonus-pulse {
+            0%, 100% { transform: translateX(-50%) scale(1); box-shadow: 0 0 20px rgba(251,191,36,0.4); }
+            50% { transform: translateX(-50%) scale(1.08); box-shadow: 0 0 40px rgba(251,191,36,0.8); }
+        }
+
+        #bonus-alert {
+            position: absolute;
+            top: clamp(90px, 20vw, 150px);
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255,253,231,0.96);
+            color: #b45309;
+            padding: 8px 28px;
+            border-radius: 20px;
+            font-size: clamp(1.2rem, 5vw, 2.2rem);
+            display: none;
+            z-index: 100;
+            border: 4px solid #fcd34d;
+            font-family: 'Kirang Haerang', cursive;
+            animation: bonus-pulse 1s infinite ease-in-out;
+            white-space: nowrap;
+        }
+
+        /* =========================================
+           4. 결과 화면
+        ========================================= */
+        #result-screen {
+            padding: env(safe-area-inset-top, 16px) 16px env(safe-area-inset-bottom, 20px);
+            justify-content: flex-start;
+            gap: 0;
+            overflow-y: auto;
+        }
+
+        .result-inner {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 480px;
+            margin: 0 auto;
+            gap: clamp(12px, 3vw, 20px);
+            padding-bottom: 8px;
+        }
+
+        .result-title {
+            font-family: 'Kirang Haerang', cursive;
+            color: white;
+            font-size: clamp(2rem, 8vw, 4rem);
+            text-align: center;
+            margin: 0;
+            text-shadow: 0 4px 16px rgba(0,0,0,0.15);
+        }
+
+        .result-cards {
+            display: flex;
+            gap: 12px;
+            width: 100%;
+        }
+
+        .result-card {
+            flex: 1;
+            background: white;
+            border-radius: 28px;
+            padding: clamp(16px, 4vw, 28px) 12px;
+            text-align: center;
+            box-shadow: 0 12px 32px rgba(0,0,0,0.12);
+        }
+
+        #result-card-a { border: 5px solid #fca5a5; }
+        #result-card-b { border: 5px solid #93c5fd; display: none; }
+
+        .card-label {
+            font-family: 'Kirang Haerang', cursive;
+            font-size: clamp(1rem, 4vw, 1.5rem);
+            margin-bottom: 8px;
+        }
+        #label-a-final { color: #dc2626; }
+
+        .card-score {
+            font-family: 'Kirang Haerang', cursive;
+            font-size: clamp(2.8rem, 12vw, 5.5rem);
+            font-weight: bold;
+            line-height: 1;
+        }
+        #result-card-a .card-score { color: #ef4444; }
+        #result-card-b .card-score { color: #3b82f6; }
+
+        .score-unit {
+            font-size: 0.55em;
+        }
+
+        .result-message-box {
+            background: rgba(255,255,255,0.92);
+            padding: clamp(16px, 4vw, 24px) clamp(16px, 4vw, 24px);
+            border-radius: 28px;
+            width: 100%;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+        }
+
+        #praise-msg {
+            font-size: clamp(0.85rem, 3.2vw, 1.05rem);
+            color: #444;
+            line-height: 1.75;
+            text-align: center;
+            font-weight: bold;
+            margin: 0 0 10px;
+        }
+
+        #final-cheer {
+            font-family: 'Kirang Haerang', cursive;
+            color: var(--rose);
+            font-size: clamp(1rem, 4.5vw, 1.8rem);
+            font-weight: bold;
+            text-align: center;
+            animation: bounce 1.2s ease-in-out infinite;
+        }
+
+        #total-score-box {
+            display: none;
+            margin-top: 10px;
+            background: #fefce8;
+            border: 3px solid #fde68a;
+            border-radius: 16px;
+            padding: clamp(10px, 2.5vw, 16px);
+            text-align: center;
+            font-family: 'Kirang Haerang', cursive;
+            font-size: clamp(1rem, 4vw, 1.6rem);
+            color: #b45309;
+            font-weight: bold;
+        }
+
+        .restart-btn {
+            background: white;
+            color: var(--rose-deep);
+            border: none;
+            padding: clamp(14px, 3vw, 18px) 0;
+            border-radius: 999px;
+            font-size: clamp(1.1rem, 4.5vw, 1.6rem);
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            max-width: 320px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+            transition: all 0.15s;
+            font-family: 'Kirang Haerang', cursive;
+        }
+        .restart-btn:active { transform: scale(0.97); }
+
     </style>
     
-    <!-- 외부 라이브러리 -->
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils"></script>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -184,122 +596,119 @@
     <!-- 1. 시작 화면 -->
     <div id="start-screen" class="screen active pink-bg">
         <canvas id="start-bg-canvas"></canvas>
-        <div class="relative z-20 flex flex-col items-center w-full px-10">
-            <h1 class="text-7xl md:text-8xl text-white mb-6 drop-shadow-2xl text-center title-font">하늘에서<br>쿠키가 내려와!</h1>
-            <p id="cam-status" class="text-xl md:text-2xl text-white mb-10 bg-black/20 px-8 py-3 rounded-full font-bold text-center">얼굴을 움직여서 떨어지는 간식을 냠냠 먹어보아요!</p>
-            <button id="start-btn" onclick="goToSettings()" disabled class="mt-8 opacity-50 bg-rose-500 text-white px-20 py-5 rounded-full text-3xl md:text-4xl shadow-xl hover:scale-105 transition-all font-bold border-4 border-rose-100">
-                준비하기
+        <div class="start-content">
+            <div class="start-cookie-icon">🍪</div>
+            <h1 class="start-title">하늘에서<br>쿠키가 내려와!</h1>
+            <p id="cam-status">얼굴을 움직여서 떨어지는 간식을 냠냠 먹어보아요!</p>
+            <button id="start-btn" onclick="goToSettings()" disabled>
+                🍩 준비하기
             </button>
         </div>
     </div>
 
     <!-- 2. 설정 화면 -->
-    <div id="settings-screen" class="screen bg-white overflow-y-auto py-10">
-        <h2 class="text-6xl text-rose-500 mb-10 title-font">놀이 규칙을 정해요</h2>
-        
-        <div class="space-y-8 w-full max-w-4xl px-10">
-            <div>
-                <p class="text-2xl md:text-3xl mb-4 text-gray-700 font-bold title-font">👩‍👧‍👦 누구와 놀이할까요?</p>
-                <div class="grid grid-cols-2 gap-4">
+    <div id="settings-screen" class="screen">
+        <div class="settings-inner">
+            <h2 class="settings-title">🍭 놀이 규칙을 정해요</h2>
+
+            <div class="setting-section">
+                <p class="setting-label">👩‍👧‍👦 누구와 놀이할까요?</p>
+                <div class="btn-grid-2">
                     <button class="config-btn mode-btn selected" onclick="setMode('together', this)">
-                        <span class="text-5xl">🤝</span>
-                        <span class="text-lg md:text-xl">함께 모드</span>
+                        <span class="emoji">🤝</span>
+                        <span class="label">함께 모드</span>
                     </button>
                     <button class="config-btn mode-btn" onclick="setMode('battle', this)">
-                        <span class="text-5xl">⚔️</span>
-                        <span class="text-lg md:text-xl">대결 모드</span>
+                        <span class="emoji">⚔️</span>
+                        <span class="label">대결 모드</span>
                     </button>
                 </div>
             </div>
 
-            <div>
-                <p class="text-2xl md:text-3xl mb-4 text-gray-700 font-bold title-font">🎨 어떤 쿠키를 먹을까요?</p>
-                <div class="grid grid-cols-3 gap-4">
+            <div class="setting-section">
+                <p class="setting-label">🎨 어떤 쿠키를 먹을까요?</p>
+                <div class="btn-grid-3">
                     <button class="config-btn content-btn selected" onclick="setContent('snack', this)">
-                        <span class="text-4xl">🍭</span>
-                        <span class="text-base md:text-lg">다양한 간식</span>
+                        <span class="emoji">🍭</span>
+                        <span class="label">다양한 간식</span>
                     </button>
                     <button class="config-btn content-btn" onclick="setContent('number', this)">
-                        <span class="text-4xl">7️⃣</span>
-                        <span class="text-base md:text-lg">숫자 쿠키</span>
+                        <span class="emoji">7️⃣</span>
+                        <span class="label">숫자 쿠키</span>
                     </button>
                     <button class="config-btn content-btn" onclick="setContent('korean', this)">
-                        <span class="text-4xl">ㄱ</span>
-                        <span class="text-base md:text-lg">한글 쿠키</span>
+                        <span class="emoji" style="font-size:clamp(1.4rem,5.5vw,2.2rem);font-family:sans-serif;">ㄱ</span>
+                        <span class="label">한글 쿠키</span>
                     </button>
                 </div>
             </div>
 
-            <div>
-                <p class="text-2xl md:text-3xl mb-4 text-gray-700 font-bold title-font">⏰ 얼마나 놀이할까요? <span id="time-val" class="text-rose-500 ml-4">45초</span></p>
-                <input type="range" min="20" max="120" value="45" step="5" oninput="setTime(this.value, this)">
-                <div class="flex justify-between mt-2 text-gray-400 font-bold text-lg">
+            <div class="setting-section">
+                <div class="time-row">
+                    <p class="setting-label">⏰ 얼마나 놀이할까요?</p>
+                    <span id="time-val">45초</span>
+                </div>
+                <input type="range" min="20" max="120" value="45" step="5" oninput="setTime(this.value)">
+                <div class="range-labels">
                     <span>20초</span>
                     <span>120초</span>
                 </div>
             </div>
-        </div>
 
-        <button onclick="goToReady()" class="mt-10 bg-rose-500 text-white px-16 py-5 rounded-full text-3xl shadow-xl hover:scale-105 transition-all font-bold border-4 border-rose-100">
-            설정 완료!
-        </button>
+            <button onclick="goToReady()" class="confirm-btn">설정 완료! 🎉</button>
+        </div>
     </div>
 
     <!-- 3. 게임 화면 -->
     <div id="game-container" style="display:none;">
-        <video id="video" playsinline></video>
+        <video id="video" playsinline muted autoplay></video>
         <canvas id="canvas"></canvas>
         <div id="divider"></div>
         
-        <div id="ready-overlay" class="absolute inset-0 bg-black/50 flex flex-col items-center justify-center z-[60]">
-            <div class="bg-white p-10 md:p-14 rounded-[50px] text-center shadow-2xl border-8 border-rose-300 w-[80%] max-w-2xl">
-                <p class="text-5xl md:text-6xl text-rose-500 mb-6 title-font">준비 운동을 해요!</p>
-                <p class="text-2xl md:text-3xl text-gray-600 mb-10 font-bold leading-relaxed">내 얼굴이 보이나요?<br>얼굴을 움직여서 간식을 잡아요!</p>
-                <button onclick="startGame()" class="bg-rose-500 text-white px-14 py-6 rounded-full text-4xl shadow-lg animate-bounce font-bold">
-                    준비 됐어요!
-                </button>
+        <div id="ready-overlay">
+            <div class="ready-card">
+                <h2>준비 운동을 해요!</h2>
+                <p>내 얼굴이 보이나요?<br>얼굴을 움직여서<br>간식을 잡아요!</p>
+                <button class="ready-start-btn" onclick="startGame()">준비 됐어요!</button>
             </div>
         </div>
 
-        <div id="team-a-label" class="team-tag" style="left: 20px; display: none;">❤️ 빨강팀</div>
-        <div id="team-b-label" class="team-tag bg-blue-500" style="right: 20px; display: none;">💙 파랑팀</div>
+        <div id="team-a-label" class="team-tag" style="left: 12px; display: none; background-color: #4ade80;">🤝 함께해요</div>
+        <div id="team-b-label" class="team-tag" style="right: 12px; display: none; background-color: #3b82f6;">💙 파랑팀</div>
         
-        <div id="score-a-display" class="absolute top-28 left-12 text-white text-7xl md:text-8xl drop-shadow-lg title-font" style="display: none;">0</div>
-        <div id="score-b-display" class="absolute top-28 right-12 text-white text-7xl md:text-8xl drop-shadow-lg title-font" style="display: none;">0</div>
+        <div id="score-a-display" class="score-display">0</div>
+        <div id="score-b-display" class="score-display">0</div>
         
-        <div id="timer" class="absolute top-6 left-1/2 -translate-x-1/2 bg-white px-10 py-3 rounded-full text-4xl md:text-5xl text-rose-600 shadow-xl border-4 border-rose-100 title-font">
-            45
-        </div>
-
+        <div id="timer" class="title-font">45</div>
         <div id="bonus-alert">🌟 보너스 2배 🌟</div>
     </div>
 
     <!-- 4. 결과 화면 -->
-    <div id="result-screen" class="screen pink-bg py-10">
-        <h2 class="text-7xl md:text-8xl text-white mb-8 drop-shadow-lg title-font">와! 다 먹었다!</h2>
-        
-        <div class="flex justify-center gap-6 w-full max-w-5xl mb-8 px-6">
-            <div id="result-card-a" class="flex-1 text-center p-8 md:p-10 rounded-[40px] bg-white border-8 border-red-300 shadow-2xl">
-                <div id="label-a-final" class="text-3xl md:text-4xl mb-4 text-red-600 font-bold title-font">❤️ 빨강팀</div>
-                <div class="text-7xl md:text-9xl font-bold text-red-500 title-font"><span id="slot-a" class="slot-number">0</span>점</div>
-            </div>
-            <div id="result-card-b" class="flex-1 text-center p-8 md:p-10 rounded-[40px] bg-white border-8 border-blue-300 shadow-2xl" style="display: none;">
-                <div class="text-3xl md:text-4xl mb-4 text-blue-600 font-bold title-font">💙 파랑팀</div>
-                <div class="text-7xl md:text-9xl font-bold text-blue-500 title-font"><span id="slot-b" class="slot-number">0</span>점</div>
-            </div>
-        </div>
+    <div id="result-screen" class="screen pink-bg">
+        <div class="result-inner">
+            <h2 class="result-title">와! 다 먹었다! 🎊</h2>
 
-        <div class="bg-white/90 p-8 rounded-[40px] max-w-4xl shadow-xl mb-10 flex flex-col items-center mx-6">
-            <p id="praise-msg" class="text-xl md:text-2xl text-gray-800 leading-relaxed text-center font-bold"></p>
-            <div id="final-cheer" class="text-4xl md:text-5xl text-rose-600 mt-6 font-bold animate-bounce text-center title-font"></div>
-            <div id="total-score-box" class="mt-6 text-4xl md:text-5xl font-bold text-center p-5 rounded-3xl bg-yellow-100 text-yellow-700 border-4 border-yellow-200 title-font" style="display:none;">
-                우리의 합계: <span id="total-val">0</span>점
+            <div class="result-cards">
+                <div id="result-card-a" class="result-card">
+                    <div id="label-a-final" class="card-label">❤️ 빨강팀</div>
+                    <div class="card-score" style="color:#ef4444;"><span id="slot-a">0</span><span class="score-unit">점</span></div>
+                </div>
+                <div id="result-card-b" class="result-card">
+                    <div class="card-label" style="color:#2563eb;">💙 파랑팀</div>
+                    <div class="card-score" style="color:#3b82f6;"><span id="slot-b">0</span><span class="score-unit">점</span></div>
+                </div>
             </div>
-        </div>
 
-        <button onclick="location.reload()" class="bg-white text-rose-500 px-14 py-6 rounded-full text-3xl shadow-xl font-bold hover:scale-105 transition-all">
-            처음으로 돌아가기
-        </button>
+            <div class="result-message-box">
+                <p id="praise-msg"></p>
+                <div id="final-cheer"></div>
+                <div id="total-score-box">
+                    우리의 합계: <span id="total-val">0</span>점
+                </div>
+            </div>
+
+            <button class="restart-btn" onclick="location.reload()">🔄 처음으로 돌아가기</button>
+        </div>
     </div>
 
     <script>
@@ -311,13 +720,12 @@
         };
         const colors = ['#FFADAD', '#FFD6A5', '#FDFFB6', '#CAFFBF', '#9BF6FF', '#A0C4FF', '#BDB2FF', '#FFC6FF'];
         const shapes = ['circle', 'rect', 'roundedRect'];
-        
         const mouthColors = ['#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'];
 
         let scoreA = 0, scoreB = 0, timeLeft = 45;
         let gameActive = false, isBonus = false;
         let cookies = [];
-        let facePositions = []; // 얼굴 전체 위치 저장
+        let facePositions = [];
 
         const video = document.getElementById('video');
         const canvas = document.getElementById('canvas');
@@ -326,8 +734,7 @@
         const startCtx = startCanvas.getContext('2d');
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
-        let bgmInterval;
-        let bgmTick = 0;
+        let bgmInterval, bgmTick = 0;
         const melody = [261.63, 329.63, 392.00, 523.25, 440.00, 349.23, 293.66, 392.00, 261.63, 392.00, 523.25, 493.88, 440.00, 392.00, 349.23, 329.63];
         const chords = [[130.81, 164.81, 196.00], [174.61, 220.00, 261.63], [196.00, 246.94, 293.66], [130.81, 164.81, 196.00]];
 
@@ -339,17 +746,13 @@
                 const note = melody[bgmTick % melody.length];
                 playTone(note, 'triangle', 0.2, 0.06);
                 if (bgmTick % 4 === 0) {
-                    const currentChord = chords[(bgmTick / 4) % chords.length];
-                    currentChord.forEach(f => playTone(f, 'sine', 0.8, 0.03));
+                    chords[(bgmTick / 4) % chords.length].forEach(f => playTone(f, 'sine', 0.8, 0.03));
                 }
                 bgmTick++;
             }, 250);
         }
 
-        function stopBGM() {
-            clearInterval(bgmInterval);
-            bgmInterval = null;
-        }
+        function stopBGM() { clearInterval(bgmInterval); bgmInterval = null; }
 
         function playTone(freq, type, duration, volume = 0.1) {
             const osc = audioCtx.createOscillator();
@@ -358,10 +761,8 @@
             osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
             gain.gain.setValueAtTime(volume, audioCtx.currentTime);
             gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.start();
-            osc.stop(audioCtx.currentTime + duration);
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(); osc.stop(audioCtx.currentTime + duration);
         }
 
         function playSound(freq, type = 'sine', duration = 0.1) {
@@ -397,7 +798,7 @@
                     startCtx.save();
                     startCtx.translate(sc.x, sc.y);
                     startCtx.rotate(sc.angle);
-                    startCtx.font = "60px Kirang Haerang";
+                    startCtx.font = "50px Kirang Haerang";
                     startCtx.textAlign = "center";
                     startCtx.fillText(sc.char, 0, 0);
                     startCtx.restore();
@@ -410,12 +811,24 @@
 
         window.onload = async () => {
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } }
+                });
                 video.srcObject = stream;
                 document.getElementById('start-btn').disabled = false;
-                document.getElementById('start-btn').classList.remove('opacity-50');
             } catch (err) {
-                document.getElementById('cam-status').innerText = "카메라 권한을 허용해주세요!";
+                console.error("Camera error:", err);
+                if (err.name === 'NotReadableError' || err.name === 'OverconstrainedError') {
+                    try {
+                        const simpleStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
+                        video.srcObject = simpleStream;
+                        document.getElementById('start-btn').disabled = false;
+                    } catch (retryErr) {
+                        document.getElementById('cam-status').innerText = "카메라가 다른 곳에서 사용 중이거나 연결이 안 돼요!";
+                    }
+                } else {
+                    document.getElementById('cam-status').innerText = "카메라를 켤 수 없어요. 설정을 확인해 주세요!";
+                }
             }
         };
 
@@ -429,7 +842,7 @@
             document.querySelectorAll('.content-btn').forEach(b => b.classList.remove('selected'));
             el.classList.add('selected');
         }
-        function setTime(val, el) {
+        function setTime(val) {
             config.time = parseInt(val);
             document.getElementById('time-val').innerText = val + "초";
         }
@@ -445,10 +858,12 @@
             const teamA = document.getElementById('team-a-label');
             if (config.mode === 'battle') {
                 document.getElementById('divider').style.display = 'block';
-                teamA.classList.add('bg-red-500'); teamA.innerText = "❤️ 빨강팀";
+                teamA.style.backgroundColor = '#ef4444';
+                teamA.innerText = "❤️ 빨강팀";
             } else {
                 document.getElementById('divider').style.display = 'none';
-                teamA.classList.remove('bg-red-500'); teamA.style.backgroundColor = '#4ade80'; teamA.innerText = "🤝 함께해요";
+                teamA.style.backgroundColor = '#4ade80';
+                teamA.innerText = "🤝 함께해요";
             }
             resizeCanvases();
             initFaceMesh();
@@ -458,6 +873,7 @@
             startBGM();
             document.getElementById('ready-overlay').style.display = 'none';
             gameActive = true; timeLeft = config.time;
+            document.getElementById('timer').innerText = timeLeft;
             document.getElementById('team-a-label').style.display = 'block';
             document.getElementById('score-a-display').style.display = 'block';
             if (config.mode === 'battle') {
@@ -466,10 +882,15 @@
             }
             const timerInt = setInterval(() => {
                 if (!gameActive) { clearInterval(timerInt); return; }
-                timeLeft--; document.getElementById('timer').innerText = timeLeft;
+                timeLeft--;
+                document.getElementById('timer').innerText = timeLeft;
                 if (timeLeft === 10) {
-                    isBonus = true; document.getElementById('bonus-alert').style.display = 'block';
-                    setTimeout(() => { if (document.getElementById('bonus-alert')) document.getElementById('bonus-alert').style.display = 'none'; }, 3000);
+                    isBonus = true;
+                    document.getElementById('bonus-alert').style.display = 'block';
+                    setTimeout(() => {
+                        const el = document.getElementById('bonus-alert');
+                        if (el) el.style.display = 'none';
+                    }, 3000);
                 }
                 if (timeLeft <= 0) { gameActive = false; endGame(); }
             }, 1000);
@@ -479,49 +900,44 @@
             const faceMesh = new FaceMesh({
                 locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`
             });
-            faceMesh.setOptions({
-                maxNumFaces: 4, refineLandmarks: true, minDetectionConfidence: 0.5, minTrackingConfidence: 0.5
-            });
+            faceMesh.setOptions({ maxNumFaces: 4, refineLandmarks: true, minDetectionConfidence: 0.5, minTrackingConfidence: 0.5 });
             faceMesh.onResults(onResults);
+
             const camera = new Camera(video, {
                 onFrame: async () => { await faceMesh.send({ image: video }); },
-                width: 1280, height: 720
+                width: { ideal: 1280 }, height: { ideal: 720 }
             });
-            camera.start();
+            camera.start().catch(() => {
+                const simpleCamera = new Camera(video, {
+                    onFrame: async () => { await faceMesh.send({ image: video }); }
+                });
+                simpleCamera.start();
+            });
         }
 
         function onResults(results) {
             ctx.save();
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            // 정방향 유지
             ctx.drawImage(results.image, 0, 0, canvas.width, canvas.height);
             ctx.restore();
 
             facePositions = [];
             if (results.multiFaceLandmarks) {
                 results.multiFaceLandmarks.forEach((landmarks, index) => {
-                    // 얼굴의 전체적인 위치와 크기를 파악하기 위해 랜드마크의 경계를 계산
                     let minX = 1, maxX = 0, minY = 1, maxY = 0;
                     landmarks.forEach(p => {
                         if (p.x < minX) minX = p.x; if (p.x > maxX) maxX = p.x;
                         if (p.y < minY) minY = p.y; if (p.y > maxY) maxY = p.y;
                     });
-
-                    // 얼굴 중심점 및 반지름 계산 (얼굴 전체 인식용)
                     const centerX = ((minX + maxX) / 2) * canvas.width;
                     const centerY = ((minY + maxY) / 2) * canvas.height;
                     const faceWidth = (maxX - minX) * canvas.width;
                     const faceHeight = (maxY - minY) * canvas.height;
-                    
-                    // 아이들의 얼굴이 작으므로 센서 반지름을 넉넉하게 설정 (얼굴 너비의 약 0.7배)
-                    const radius = Math.max(faceWidth, faceHeight) * 0.7;
-
+                    const radius = Math.max(faceWidth, faceHeight) * 0.8;
                     let team = (centerX < canvas.width / 2) ? 0 : 1;
                     if (config.mode === 'together') team = 0;
-
-                    let displayColor = (config.mode === 'battle') ? (team === 0 ? '#ef4444' : '#3b82f6') : mouthColors[index % mouthColors.length];
-
-                    facePositions.push({ x: centerX, y: centerY, radius: radius, team });
+                    const displayColor = (config.mode === 'battle') ? (team === 0 ? '#ef4444' : '#3b82f6') : mouthColors[index % mouthColors.length];
+                    facePositions.push({ x: centerX, y: centerY, radius, team });
                     drawFaceSensor(centerX, centerY, radius, displayColor);
                 });
             }
@@ -531,23 +947,21 @@
         function drawFaceSensor(x, y, radius, color) {
             ctx.beginPath();
             ctx.arc(x, y, radius, 0, Math.PI * 2);
-            ctx.lineWidth = 8;
+            ctx.lineWidth = 6;
             ctx.strokeStyle = "white";
             ctx.stroke();
-            ctx.fillStyle = color + "66"; // 반투명 배경
+            ctx.fillStyle = color + "55";
             ctx.fill();
-            
-            // 귀여운 '냠냠' 표시
             ctx.fillStyle = "white";
-            ctx.font = "bold 40px Kirang Haerang";
+            ctx.font = `bold ${Math.max(20, radius * 0.35)}px Kirang Haerang`;
             ctx.textAlign = "center";
-            ctx.fillText("냠냠!", x, y - radius - 15);
+            ctx.fillText("냠냠!", x, y - radius - 10);
         }
 
         function updateObjects() {
             if (Math.random() < (isBonus ? 0.2 : 0.1)) {
                 cookies.push({
-                    x: Math.random() * (canvas.width - 150) + 75,
+                    x: Math.random() * (canvas.width - 120) + 60,
                     y: -100,
                     char: isBonus && Math.random() > 0.7 ? '🌟' : contents[config.content][Math.floor(Math.random() * contents[config.content].length)],
                     speed: 5 + Math.random() * 5,
@@ -555,25 +969,33 @@
                     shape: shapes[Math.floor(Math.random() * shapes.length)]
                 });
             }
+
+            /* 쿠키 크기: 화면 너비에 비례 */
+            const size = Math.min(canvas.width * 0.22, 110);
+            const fontSize = Math.round(size * 0.58);
+
             for (let i = cookies.length - 1; i >= 0; i--) {
                 let c = cookies[i];
                 c.y += c.speed;
-                ctx.fillStyle = c.color; ctx.strokeStyle = "white"; ctx.lineWidth = 4;
-                const size = 110;
+                ctx.fillStyle = c.color; ctx.strokeStyle = "white"; ctx.lineWidth = 3;
                 if (c.char === '🌟') {
-                    ctx.font = "100px Kirang Haerang"; ctx.fillText(c.char, c.x, c.y + 35);
+                    ctx.font = `${fontSize + 30}px Kirang Haerang`;
+                    ctx.textAlign = "center";
+                    ctx.fillText(c.char, c.x, c.y + Math.round(fontSize * 0.4));
                 } else {
                     ctx.beginPath();
-                    if (c.shape === 'circle') ctx.arc(c.x, c.y, size/2, 0, Math.PI * 2);
+                    if (c.shape === 'circle') ctx.arc(c.x, c.y, size / 2, 0, Math.PI * 2);
                     else if (c.shape === 'rect') ctx.rect(c.x - size/2, c.y - size/2, size, size);
-                    else ctx.roundRect(c.x - size/2, c.y - size/2, size, size, 20);
+                    else ctx.roundRect(c.x - size/2, c.y - size/2, size, size, 16);
                     ctx.fill(); ctx.stroke();
-                    ctx.fillStyle = "#333"; ctx.font = "64px Kirang Haerang"; ctx.textAlign = "center"; ctx.fillText(c.char, c.x, c.y + 20);
+                    ctx.fillStyle = "#333";
+                    ctx.font = `${fontSize}px Kirang Haerang`;
+                    ctx.textAlign = "center";
+                    ctx.fillText(c.char, c.x, c.y + Math.round(fontSize * 0.33));
                 }
 
                 facePositions.forEach((f) => {
-                    // 이제 입 모양이 아니라 얼굴 중심과의 거리를 체크합니다.
-                    if (Math.hypot(f.x - c.x, f.y - c.y) < f.radius + 30) {
+                    if (Math.hypot(f.x - c.x, f.y - c.y) < f.radius + 20) {
                         const p = c.char === '🌟' ? 10 : 1;
                         if (f.team === 0) { scoreA += p; document.getElementById('score-a-display').innerText = scoreA; }
                         else { scoreB += p; document.getElementById('score-b-display').innerText = scoreB; }
@@ -588,9 +1010,9 @@
         function runSlot(targetId, finalValue) {
             const el = document.getElementById(targetId);
             if (!el) return;
-            let start = performance.now();
+            const start = performance.now();
             function update(now) {
-                let progress = Math.min((now - start) / 2500, 1);
+                const progress = Math.min((now - start) / 2500, 1);
                 el.innerText = Math.floor(progress * finalValue);
                 if (progress < 1) requestAnimationFrame(update);
                 else el.innerText = finalValue;
@@ -599,26 +1021,27 @@
         }
 
         function endGame() {
-            stopBGM(); document.getElementById('game-container').style.display = 'none';
+            stopBGM();
+            document.getElementById('game-container').style.display = 'none';
             document.getElementById('result-screen').classList.add('active');
-            const praiseEl = document.getElementById('praise-msg');
-            const cheerEl = document.getElementById('final-cheer');
-            const totalScoreBox = document.getElementById('total-score-box');
 
             if (config.mode === 'battle') {
                 document.getElementById('result-card-b').style.display = 'block';
                 document.getElementById('label-a-final').innerText = "❤️ 빨강팀";
+                document.getElementById('label-a-final').style.color = '#dc2626';
                 runSlot('slot-a', scoreA); runSlot('slot-b', scoreB);
-                if (praiseEl) praiseEl.innerText = `서로 정정당당하게 놀이하는 모습이 정말 멋져요! 끝까지 포기하지 않고 집중해서 간식을 모은 우리 친구들, 최고예요!`;
-                if (cheerEl) cheerEl.innerText = "함께 놀아준 친구에게 '고마워!'라고 인사해요!";
-                if (totalScoreBox) { totalScoreBox.style.display = 'block'; document.getElementById('total-val').innerText = scoreA + scoreB; }
+                document.getElementById('praise-msg').innerText = `서로 정정당당하게 놀이하는 모습이 정말 멋져요! 끝까지 포기하지 않고 집중해서 간식을 모은 우리 친구들, 최고예요!`;
+                document.getElementById('final-cheer').innerText = "함께 놀아준 친구에게 '고마워!'라고 인사해요!";
+                document.getElementById('total-score-box').style.display = 'block';
+                document.getElementById('total-val').innerText = scoreA + scoreB;
             } else {
                 document.getElementById('label-a-final').innerText = "🤝 함께해요";
                 document.getElementById('label-a-final').style.color = '#16a34a';
                 runSlot('slot-a', scoreA);
-                if (praiseEl) praiseEl.innerText = `우와! 우리 친구들이 힘을 합쳐서 하늘에서 내려오는 간식을 이렇게나 많이 모았네요! 적극적으로 참여하는 모습이 대견해요!`;
-                if (cheerEl) cheerEl.innerText = "'열심히 참여한 나! 정말 최고야✨'라고 외쳐봐요!";
+                document.getElementById('praise-msg').innerText = `우와! 우리 친구들이 힘을 합쳐서 하늘에서 내려오는 간식을 이렇게나 많이 모았네요! 적극적으로 참여하는 모습이 대견해요!`;
+                document.getElementById('final-cheer').innerText = "'열심히 참여한 나! 정말 최고야✨'라고 외쳐봐요!";
             }
+
             confetti({ particleCount: 300, spread: 100, origin: { y: 0.5 } });
             playTone(523.25, 'square', 0.2, 0.1);
             setTimeout(() => playTone(659.25, 'square', 0.2, 0.1), 150);
